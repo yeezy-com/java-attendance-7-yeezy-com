@@ -48,6 +48,35 @@ public class AttendanceController {
             if (input.equals("Q")) {
                 break;
             }
+
+
+            if (input.equals("1")) {
+                if (now.getDayOfWeek().getValue() == 6 || now.getDayOfWeek().getValue() == 7) {
+                    throw new IllegalArgumentException(String.format("[ERROR] %d월 %d일 %s은 등교일이 아닙니다.", now.getMonth().getValue(), now.getDayOfMonth(), dayOfWeek));
+                }
+
+                System.out.println("닉네임을 입력해 주세요.");
+                String nickname = Console.readLine();
+
+                if (!attendanceRecord.containsKey(nickname)) {
+                    throw new IllegalArgumentException("[ERROR] 등록되지 않은 닉네임입니다.");
+                }
+
+                System.out.println("등교 시간을 입력해 주세요.");
+                LocalTime time = LocalTime.parse(Console.readLine());
+
+                attendanceRecord.forEach((key, values) -> {
+                    AttendanceStatus attendanceStatus = values.stream()
+                            .filter(value -> value.isSameDate(now))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (attendanceStatus == null) {
+                        attendanceRecord.get(key).add(makeAS(nickname, now, time));
+                    }
+                });
+                continue;
+            }
         }
     }
 
