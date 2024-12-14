@@ -168,17 +168,42 @@ public class AttendanceController {
             }
 
             if (input.equals("4")) {
-                Map<String, Integer> checkCount = new HashMap<>();
-                attendanceRecord.keySet()
-                        .forEach(name -> checkCount.put(name, 0));
+                System.out.println("제적 위험자 조회 결과");
+                for (String name : attendanceRecord.keySet()) {
+                    long absence = attendanceRecord.get(name).stream()
+                            .filter(attendanceStatus -> attendanceStatus.getStatus() == Status.ABSENCE)
+                            .count();
 
-                attendanceRecord.values().stream()
-                        .forEach(value -> value.stream()
-                                .forEach(attendanceStatus -> {
-                                    if (attendanceStatus.getStatus() == Status.TARDY) {
+                    long tardy = attendanceRecord.get(name).stream()
+                            .filter(attendanceStatus -> attendanceStatus.getStatus() == Status.TARDY)
+                            .count();
 
-                                    }
-                                }));
+                    absence += tardy / 3;
+                    tardy = tardy % 3;
+
+                    String target = null;
+
+                    if (absence == 2) {
+                        target = "경고";
+                    }
+
+                    if (absence >= 3) {
+                        target = "면담";
+                    }
+
+                    if (absence > 5) {
+                        target = "제적";
+                    }
+
+                    if (target == null) {
+                        continue;
+                    }
+
+                    System.out.printf("- %s: 결석 %d회, 지각 %d회 (%s)%n", name, absence, tardy, target);
+                }
+
+                System.out.println();
+                continue;
             }
 
             throw new IllegalArgumentException(ErrorMessage.WRONG_FORM_ERROR.getMsg());
