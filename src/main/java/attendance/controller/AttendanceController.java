@@ -7,7 +7,6 @@ import attendance.domain.FileConverter;
 import attendance.domain.Status;
 import attendance.view.InputView;
 import attendance.view.OutputView;
-import camp.nextstep.edu.missionutils.Console;
 import camp.nextstep.edu.missionutils.DateTimes;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -52,8 +51,7 @@ public class AttendanceController {
                     throw new IllegalArgumentException(String.format("[ERROR] %d월 %d일 %s은 등교일이 아닙니다.", now.getMonth().getValue(), now.getDayOfMonth(), dayOfWeek));
                 }
 
-                System.out.println("닉네임을 입력해 주세요.");
-                String nickname = Console.readLine();
+                String nickname = inputView.inputNickName();
 
                 validateContainsNickname(attendanceRecord, nickname);
 
