@@ -15,11 +15,10 @@ public class AttendanceStatus {
         this.status = status;
     }
 
-    public boolean isSameDate(LocalDateTime now) {
+    public boolean isSameDate(LocalDate now) {
         LocalDate originalDate = date.toLocalDate();
-        LocalDate originalNowDate = now.toLocalDate();
 
-        return originalDate.isEqual(originalNowDate);
+        return originalDate.isEqual(now);
     }
 
     public boolean isSameDate(final int day) {

@@ -1,7 +1,6 @@
 package attendance.controller;
 
 import attendance.AttendanceStatus;
-import attendance.Crew;
 import attendance.CsvFileReader;
 import attendance.FileConverter;
 import attendance.Status;
@@ -9,15 +8,14 @@ import attendance.view.InputView;
 import attendance.view.OutputView;
 import camp.nextstep.edu.missionutils.Console;
 import camp.nextstep.edu.missionutils.DateTimes;
-import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -37,7 +35,7 @@ public class AttendanceController {
     public void start() {
         Map<String, List<AttendanceStatus>> attendanceRecord = init();
 
-        LocalDateTime now = DateTimes.now();
+        LocalDate now = DateTimes.now().toLocalDate();
         while (true) {
             String dayOfWeek = now.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
             outputView.welcomeMessage(now);
@@ -49,8 +47,7 @@ public class AttendanceController {
                 break;
             }
 
-
-            if (input.equals("1")) {
+            if (input.equals("1")) { // 출석 확인
                 if (now.getDayOfWeek().getValue() == 6 || now.getDayOfWeek().getValue() == 7) {
                     throw new IllegalArgumentException(String.format("[ERROR] %d월 %d일 %s은 등교일이 아닙니다.", now.getMonth().getValue(), now.getDayOfMonth(), dayOfWeek));
                 }
@@ -63,7 +60,16 @@ public class AttendanceController {
                 }
 
                 System.out.println("등교 시간을 입력해 주세요.");
-                LocalTime time = LocalTime.parse(Console.readLine());
+                LocalTime time;
+                try {
+                    time = LocalTime.parse(Console.readLine());
+                } catch (DateTimeParseException e) {
+                    throw new IllegalArgumentException("[ERROR] 잘못된 형식을 입력하였습니다.");
+                }
+
+                if (time.isBefore(LocalTime.of(8, 0)) || time.isAfter(LocalTime.of(23, 0))) {
+                    throw new IllegalArgumentException("[ERROR] 잘못된 형식을 입력하였습니다.");
+                }
 
                 attendanceRecord.forEach((key, values) -> {
                     AttendanceStatus attendanceStatus = values.stream()
@@ -72,13 +78,22 @@ public class AttendanceController {
                             .orElse(null);
 
                     if (attendanceStatus == null) {
-                        attendanceRecord.get(key).add(makeAS(nickname, now, time));
+                        AttendanceStatus attendance = makeAS(nickname, LocalDate.from(now), time);
+                        attendanceRecord.get(key).add(attendance);
+
+                        String displayName = attendance.getDate().getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
+                        System.out.printf("%d월 %d일 %s %s (%s)%n", attendance.getDate().getMonth().getValue(),
+                                attendance.getDate().getDayOfMonth(), displayName, time, attendance.getStatus().getStatus());
                     }
                 });
                 continue;
             }
 
-            if (input.equals("3")) {
+            if (input.equals("2")) { // 출석 수정
+
+            }
+
+            if (input.equals("3")) { //
                 System.out.println("닉네임을 입력해 주세요.");
                 String nickname = Console.readLine();
 
@@ -140,6 +155,8 @@ public class AttendanceController {
                 System.out.println();
                 continue;
             }
+
+            throw new IllegalArgumentException("[ERROR] 잘못된 형식을 입력하였습니다.");
         }
     }
 
@@ -177,21 +194,20 @@ public class AttendanceController {
         return (localDate.getDayOfWeek().getValue() == 6 || localDate.getDayOfWeek().getValue() == 7);
     }
 
-    private AttendanceStatus makeAS(String name, LocalDateTime now, LocalTime time) {
+    private AttendanceStatus makeAS(String name, LocalDate now, LocalTime time) {
         LocalTime standardTime = LocalTime.of(10, 0);
 
         Duration between = Duration.between(standardTime, time);
-        System.out.println(between.getSeconds());
 
         if (between.getSeconds() > 1800) {
-            return new AttendanceStatus(name, now, Status.ABSENCE);
+            return new AttendanceStatus(name, LocalDateTime.of(now, time), Status.ABSENCE);
         }
 
         if (between.getSeconds() > 300) {
-            return new AttendanceStatus(name, now, Status.TARDY);
+            return new AttendanceStatus(name, LocalDateTime.of(now, time), Status.TARDY);
         }
 
-        return new AttendanceStatus(name, now, Status.ATTENDANCE);
+        return new AttendanceStatus(name, LocalDateTime.of(now, time), Status.ATTENDANCE);
     }
 
     private AttendanceStatus attendanceStatusConvert(String[] rawData) {
@@ -203,7 +219,6 @@ public class AttendanceController {
         LocalTime time = LocalTime.of(10, 0);
 
         Duration between = Duration.between(time, attendanceTime);
-        System.out.println(between.getSeconds());
 
         if (between.getSeconds() > 1800) {
             return new AttendanceStatus(name, date, Status.ABSENCE);
