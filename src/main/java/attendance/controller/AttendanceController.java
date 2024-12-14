@@ -36,7 +36,7 @@ public class AttendanceController {
     public void start() {
         Map<String, List<AttendanceStatus>> attendanceRecord = init();
 
-        LocalDate now = LocalDate.of(2024, 12, 13);
+        LocalDate now = DateTimes.now().toLocalDate();
         while (true) {
             String dayOfWeek = now.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
             outputView.printWelcomeMessage(now);
