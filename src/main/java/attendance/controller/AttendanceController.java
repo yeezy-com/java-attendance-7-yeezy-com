@@ -55,9 +55,7 @@ public class AttendanceController {
                 System.out.println("닉네임을 입력해 주세요.");
                 String nickname = Console.readLine();
 
-                if (!attendanceRecord.containsKey(nickname)) {
-                    throw new IllegalArgumentException("[ERROR] 등록되지 않은 닉네임입니다.");
-                }
+                validateContainsNickname(attendanceRecord, nickname);
 
                 System.out.println("등교 시간을 입력해 주세요.");
                 LocalTime time;
@@ -71,35 +69,77 @@ public class AttendanceController {
                     throw new IllegalArgumentException("[ERROR] 잘못된 형식을 입력하였습니다.");
                 }
 
-                attendanceRecord.forEach((key, values) -> {
-                    AttendanceStatus attendanceStatus = values.stream()
-                            .filter(value -> value.isSameDate(now))
-                            .findFirst()
-                            .orElse(null);
+                List<AttendanceStatus> values = attendanceRecord.get(nickname);
+                AttendanceStatus attendanceStatus = values.stream()
+                        .filter(value -> value.isSameDate(now))
+                        .findFirst()
+                        .orElse(null);
 
-                    if (attendanceStatus == null) {
-                        AttendanceStatus attendance = makeAS(nickname, LocalDate.from(now), time);
-                        attendanceRecord.get(key).add(attendance);
+                if (attendanceStatus == null) {
+                    AttendanceStatus attendance = makeAS(nickname, LocalDate.from(now), time);
+                    attendanceRecord.get(nickname).add(attendance);
 
-                        String displayName = attendance.getDate().getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
-                        System.out.printf("%d월 %d일 %s %s (%s)%n", attendance.getDate().getMonth().getValue(),
-                                attendance.getDate().getDayOfMonth(), displayName, time, attendance.getStatus().getStatus());
-                    }
-                });
-                continue;
+                    String displayName = attendance.getDate().getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
+                    System.out.printf("%d월 %d일 %s %s (%s)%n", attendance.getDate().getMonth().getValue(),
+                            attendance.getDate().getDayOfMonth(), displayName, time, attendance.getStatus().getStatus());
+                    continue;
+                }
+
+                throw new IllegalArgumentException("[ERROR] 이미 출석을 확인하였습니다. 필요한 경우 수정 기능을 이용해 주세요.");
             }
 
             if (input.equals("2")) { // 출석 수정
+                String nickname = inputView.inputEditCrewNickname();
+                validateContainsNickname(attendanceRecord, nickname);
 
+                int day = Integer.parseInt(inputView.inputEditDay());
+                if (day > now.getDayOfMonth()) {
+                    throw new IllegalArgumentException("[ERROR] 아직 수정할 수 없습니다.");
+                }
+                LocalDate date = LocalDate.of(2024, 12, day);
+
+                AttendanceStatus attendance = attendanceRecord.get(nickname).stream()
+                        .filter(attendanceStatus -> attendanceStatus.isSameDate(date))
+                        .findFirst()
+                        .orElse(null);
+
+                if (isDayOff(day)) {
+                    String displayName = date.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
+                    throw new IllegalArgumentException(String.format("[ERROR] %s월 %02d일 %s은 등교일이 아닙니다.", 12, day, displayName));
+                }
+
+                System.out.println("언제로 변경하겠습니까?");
+                LocalTime time;
+                try {
+                    time = LocalTime.parse(Console.readLine());
+                } catch (DateTimeParseException e) {
+                    throw new IllegalArgumentException("[ERROR] 잘못된 형식을 입력하였습니다.");
+                }
+
+                if (attendance == null) {
+                    AttendanceStatus attendanceStatus = makeAS(nickname, LocalDate.from(now), time);
+                    attendanceRecord.get(nickname).add(attendanceStatus);
+
+                    String displayName = date.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
+                    System.out.printf("%d월 %d일 %s %s (%s)%n", attendanceStatus.getDate().getMonth().getValue(),
+                            attendanceStatus.getDate().getDayOfMonth(), displayName, time, attendanceStatus.getStatus().getStatus());
+                    continue;
+                }
+
+                String displayName = date.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
+                System.out.printf("%d월 %d일 %s %s (%s) -> ", 12, attendance.getDate().getDayOfMonth(),
+                        displayName, attendance.getDate().toLocalTime(), attendance.getStatus().getStatus());
+                attendance.updateTime(time);
+                System.out.printf("%s (%s) 수정 완료!%n", attendance.getDate().toLocalTime(), attendance.getStatus().getStatus());
+
+                continue;
             }
 
             if (input.equals("3")) { //
                 System.out.println("닉네임을 입력해 주세요.");
                 String nickname = Console.readLine();
 
-                if (!attendanceRecord.containsKey(nickname)) {
-                    throw new IllegalArgumentException("[ERROR] 등록되지 않은 닉네임입니다.");
-                }
+                validateContainsNickname(attendanceRecord, nickname);
 
                 System.out.println();
                 System.out.printf("이번 달 %s의 출석 기록입니다.%n", nickname);
@@ -160,6 +200,12 @@ public class AttendanceController {
         }
     }
 
+    private static void validateContainsNickname(Map<String, List<AttendanceStatus>> attendanceRecord, String nickname) {
+        if (!attendanceRecord.containsKey(nickname)) {
+            throw new IllegalArgumentException("[ERROR] 등록되지 않은 닉네임입니다.");
+        }
+    }
+
     private Map<String, List<AttendanceStatus>> init() {
         CsvFileReader csv = new CsvFileReader();
         List<String> attendances = csv.read("attendances");
@@ -196,6 +242,9 @@ public class AttendanceController {
 
     private AttendanceStatus makeAS(String name, LocalDate now, LocalTime time) {
         LocalTime standardTime = LocalTime.of(10, 0);
+        if (now.getDayOfWeek().getValue() == 1) {
+            time = LocalTime.of(13, 0);
+        }
 
         Duration between = Duration.between(standardTime, time);
 
@@ -217,6 +266,9 @@ public class AttendanceController {
 
         LocalTime attendanceTime = date.toLocalTime();
         LocalTime time = LocalTime.of(10, 0);
+        if (date.getDayOfWeek().getValue() == 1) {
+            time = LocalTime.of(13, 0);
+        }
 
         Duration between = Duration.between(time, attendanceTime);
 

@@ -1,13 +1,15 @@
 package attendance;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public class AttendanceStatus {
 
     private final String name;
-    private final LocalDateTime date;
-    private final Status status;
+    private LocalDateTime date;
+    private Status status;
 
     public AttendanceStatus(String name, LocalDateTime date, Status status) {
         this.name = name;
@@ -45,5 +47,27 @@ public class AttendanceStatus {
             return true;
         }
         return false;
+    }
+
+    public void updateTime(LocalTime time) {
+        date = LocalDateTime.of(date.toLocalDate(), time);
+        LocalTime standardTime = LocalTime.of(10, 0);
+        if (date.getDayOfWeek().getValue() == 1) {
+            time = LocalTime.of(13, 0);
+        }
+
+        Duration between = Duration.between(standardTime, time);
+
+        if (between.getSeconds() > 1800) {
+            this.status = Status.ABSENCE;
+            return;
+        }
+
+        if (between.getSeconds() > 300) {
+            this.status = Status.TARDY;
+            return;
+        }
+
+        this.status = Status.ATTENDANCE;
     }
 }
