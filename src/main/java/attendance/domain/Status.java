@@ -1,4 +1,4 @@
-package attendance;
+package attendance.domain;
 
 public enum Status {
     ATTENDANCE("출석"),

@@ -1,10 +1,10 @@
 package attendance.controller;
 
-import attendance.AttendanceStatus;
-import attendance.CsvFileReader;
-import attendance.ErrorMessage;
-import attendance.FileConverter;
-import attendance.Status;
+import attendance.domain.AttendanceStatus;
+import attendance.util.CsvFileReader;
+import attendance.global.ErrorMessage;
+import attendance.domain.FileConverter;
+import attendance.domain.Status;
 import attendance.view.InputView;
 import attendance.view.OutputView;
 import camp.nextstep.edu.missionutils.Console;
@@ -87,9 +87,7 @@ public class AttendanceController {
                 validateContainsNickname(attendanceRecord, nickname);
 
                 int day = Integer.parseInt(inputView.inputEditDay());
-                if (day > now.getDayOfMonth()) {
-                    throw new IllegalArgumentException("[ERROR] 아직 수정할 수 없습니다.");
-                }
+                validateIsFutureDay(day, now);
                 LocalDate date = LocalDate.of(2024, 12, day);
 
                 AttendanceStatus attendance = attendanceRecord.get(nickname).stream()
@@ -97,18 +95,8 @@ public class AttendanceController {
                         .findFirst()
                         .orElse(null);
 
-                if (isDayOff(day)) {
-                    String displayName = date.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
-                    throw new IllegalArgumentException(String.format("[ERROR] %s월 %02d일 %s은 등교일이 아닙니다.", 12, day, displayName));
-                }
-
-                System.out.println("언제로 변경하겠습니까?");
-                LocalTime time;
-                try {
-                    time = LocalTime.parse(Console.readLine());
-                } catch (DateTimeParseException e) {
-                    throw new IllegalArgumentException("[ERROR] 잘못된 형식을 입력하였습니다.");
-                }
+                validateIsPossibleEdit(day, date);
+                LocalTime time = inputView.inputEditTime();
 
                 System.out.println();
                 if (attendance == null) {
@@ -207,6 +195,19 @@ public class AttendanceController {
             }
 
             throw new IllegalArgumentException(ErrorMessage.WRONG_FORM_ERROR.getMsg());
+        }
+    }
+
+    private static void validateIsFutureDay(int day, LocalDate now) {
+        if (day > now.getDayOfMonth()) {
+            throw new IllegalArgumentException(ErrorMessage.FUTURE_EDIT.getMsg());
+        }
+    }
+
+    private void validateIsPossibleEdit(int day, LocalDate date) {
+        if (isDayOff(day)) {
+            String displayName = date.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
+            throw new IllegalArgumentException(String.format("[ERROR] %s월 %02d일 %s은 등교일이 아닙니다.", 12, day, displayName));
         }
     }
 

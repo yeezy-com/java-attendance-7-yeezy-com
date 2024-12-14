@@ -1,4 +1,4 @@
-package attendance;
+package attendance.util;
 
 import java.io.IOException;
 import java.nio.file.Files;

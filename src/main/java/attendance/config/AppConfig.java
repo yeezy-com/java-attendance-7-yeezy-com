@@ -1,6 +1,6 @@
 package attendance.config;
 
-import attendance.CsvFileReader;
+import attendance.util.CsvFileReader;
 import attendance.controller.AttendanceController;
 import attendance.view.InputView;
 import attendance.view.OutputView;

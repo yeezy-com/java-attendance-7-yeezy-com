@@ -1,6 +1,6 @@
 package attendance.view;
 
-import attendance.ErrorMessage;
+import attendance.global.ErrorMessage;
 import camp.nextstep.edu.missionutils.Console;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -28,6 +28,15 @@ public class InputView {
     public String inputEditDay() {
         System.out.println("수정하려는 날짜(일)를 입력해 주세요.");
         return Console.readLine();
+    }
+
+    public LocalTime inputEditTime() {
+        System.out.println("언제로 변경하겠습니까?");
+        try {
+            return LocalTime.parse(Console.readLine());
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException(ErrorMessage.WRONG_FORM_ERROR.getMsg());
+        }
     }
 
     public String inputNickName() {
