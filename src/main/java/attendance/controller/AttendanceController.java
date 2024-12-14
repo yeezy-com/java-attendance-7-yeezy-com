@@ -77,6 +77,69 @@ public class AttendanceController {
                 });
                 continue;
             }
+
+            if (input.equals("3")) {
+                System.out.println("닉네임을 입력해 주세요.");
+                String nickname = Console.readLine();
+
+                if (!attendanceRecord.containsKey(nickname)) {
+                    throw new IllegalArgumentException("[ERROR] 등록되지 않은 닉네임입니다.");
+                }
+
+                System.out.println();
+                System.out.printf("이번 달 %s의 출석 기록입니다.%n", nickname);
+                System.out.println();
+
+                int[] attendanceCount = new int[3];
+                for (int day = 1; day < now.getDayOfMonth(); day++) {
+                    int finalDay = day;
+                    AttendanceStatus attendanceStatus = attendanceRecord.get(nickname).stream()
+                            .filter(value -> value.isSameDate(finalDay))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (isDayOff(day)) {
+                        continue;
+                    }
+
+                    if (attendanceStatus == null) {
+                        String displayName = LocalDate.of(2024, 12, day).getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
+                        System.out.printf("%d월 %02d일 %s --:-- (결석)%n", 12, day, displayName);
+                        attendanceCount[2]++;
+                        continue;
+                    }
+
+                    String displayName = attendanceStatus.getDate().getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN);
+                    attendanceCount[findAttendanceIndex(attendanceStatus)]++;
+                    System.out.printf("%d월 %02d일 %s %s (%s)%n", 12, day, displayName, LocalTime.from(attendanceStatus.getDate()), attendanceStatus.getStatus().getStatus());
+                }
+
+                attendanceCount[2] += attendanceCount[1] / 3;
+                attendanceCount[1] = attendanceCount[1] % 3;
+                System.out.println();
+                System.out.printf("출석: %d회%n", attendanceCount[0]);
+                System.out.printf("지각: %d회%n", attendanceCount[1]);
+                System.out.printf("결석: %d회%n", attendanceCount[2]);
+                System.out.println();
+
+                if (attendanceCount[2] > 5) {
+                    System.out.println("제적 대상자입니다.");
+                    continue;
+                }
+
+                if (attendanceCount[2] >= 3) {
+                    System.out.println("면담 대상자입니다.");
+                    continue;
+                }
+
+                if (attendanceCount[2] >= 2) {
+                    System.out.println("경고 대상자입니다.");
+                    continue;
+                }
+
+                System.out.println();
+                continue;
+            }
         }
     }
 
